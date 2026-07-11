@@ -3,7 +3,12 @@ pre-commit:
   jobs:
     - name: lint
       glob: "*.{js,ts,svelte}"
-      run: npx ultracite check {staged_files}
+      # Not {staged_files}: oxfmt 0.58.0 refuses to check an explicitly-passed
+      # .svelte file path ("Expected at least one target file... excluded by
+      # ignore rules") even though a directory scan finds and formats the
+      # same file correctly. Scanning the whole project sidesteps it and is
+      # still fast (~250ms) at this project's size.
+      run: npx ultracite check .
     - name: typecheck
       run: npm run check
 

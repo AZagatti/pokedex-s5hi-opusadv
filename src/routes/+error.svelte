@@ -5,6 +5,10 @@
 
 <svelte:head>
   <title>{page.status} — Pokédex</title>
+  <meta
+    name="description"
+    content={`This page fainted and could not be found. Head back to the Pokédex to keep browsing.`}
+  />
 </svelte:head>
 
 <div class="error-page">
@@ -46,7 +50,7 @@
     margin-top: 0.5rem;
     padding: 0.75rem 1.5rem;
     border-radius: 999px;
-    background: var(--accent);
+    background: var(--accent-text-bg);
     color: var(--accent-contrast);
     font-weight: 600;
     box-shadow: var(--shadow-sm);

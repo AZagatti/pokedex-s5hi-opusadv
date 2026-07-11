@@ -92,7 +92,7 @@
   .empty-state__link {
     padding: 0.65rem 1.4rem;
     border-radius: 999px;
-    background: var(--accent);
+    background: var(--accent-text-bg);
     color: var(--accent-contrast);
     font-weight: 600;
   }

@@ -94,13 +94,20 @@
   }
 
   .evolution-chain__item--current {
-    background: var(--accent);
+    background: var(--accent-text-bg);
     color: var(--accent-contrast);
   }
 
   .evolution-chain__item small {
     font-weight: 400;
     opacity: 0.75;
+  }
+
+  /* Diluting opacity for de-emphasis works against --surface-hover's neutral
+     background, but against --accent-text-bg it drags an already-checked
+     contrast ratio back down — keep the current item's level text solid. */
+  .evolution-chain__item--current small {
+    opacity: 1;
   }
 
   @media (hover: hover) and (pointer: fine) {
