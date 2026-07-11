@@ -16,9 +16,13 @@ A fast, animated, fully-accessible Pokédex — built with Svelte 5 and shipped 
 
 Audited on the live deployed URL (mobile, real network):
 
-| Performance | Accessibility | Best Practices | SEO |
-| :---------: | :-----------: | :------------: | :-: |
-|     100     |      100      |      100       | 100 |
+| Route             | Performance | Accessibility | Best Practices | SEO |
+| ----------------- | :---------: | :-----------: | :------------: | :-: |
+| `/`               |     100     |      100      |      100       | 100 |
+| `/berries`        |     100     |      100      |      100       | 100 |
+| `/pokemon/[name]` |    n/a¹     |      100      |      100       | 100 |
+
+¹ Dynamic routes are served via the SPA `404.html` fallback on GitHub Pages (a real 404 status by design — see [`docs/DECISIONS.md`](docs/DECISIONS.md)), which Lighthouse's navigation audit can't score. Verified instead via a client-navigation performance trace: INP 22ms, CLS 0.00.
 
 ## Features
 

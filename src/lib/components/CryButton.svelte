@@ -27,7 +27,7 @@
   type="button"
   class="cry-button"
   class:cry-button--playing={playing}
-  aria-label={`Play ${name}'s cry`}
+  aria-label={`Play cry for ${name}`}
   onclick={play}
 >
   <Volume2 size={18} aria-hidden="true" />

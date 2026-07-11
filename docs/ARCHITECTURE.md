@@ -6,9 +6,9 @@
 src/routes/
 ├── +layout.svelte / +layout.ts   # global shell (Header, skip-link); prerender=true, ssr=false
 ├── +error.svelte                  # 404 / error page
-├── +page.svelte / +page.ts        # "/" — Pokédex list (see "The one SSR'd route" below)
+├── +page.svelte / +page.ts        # "/" — Pokédex list; +page.ts sets ssr=true (see below)
 ├── pokemon/[name]/+page.svelte    # detail page; +page.ts sets prerender=false
-├── berries/+page.svelte           # berries list
+├── berries/+page.svelte           # berries list; +page.ts sets ssr=true (see below)
 ├── berries/[name]/+page.svelte    # berry detail; +page.ts sets prerender=false
 └── favorites/+page.svelte         # favorites (reads localStorage via a store, no +page.ts)
 ```
@@ -28,7 +28,7 @@ All Pokémon/berry data comes from [PokeAPI](https://pokeapi.co/) via `src/lib/a
 
 `src/lib/pokemon/candidates.ts` builds the filterable candidate pool for the list page: given a search string / generation / set of types, it fetches (and caches) the relevant type/generation indexes, intersects them, and returns a plain name+URL list for the list page to paginate through client-side. It returns `null` when no filter is active, telling the caller to fall back to the cheaper server-paginated `/pokemon` browse endpoint instead of downloading the full ~1300-entry index.
 
-## Rendering strategy: CSR-only, with one SSR'd route
+## Rendering strategy: CSR by default, SSR'd for the two static-shaped routes
 
 The root `+layout.ts` sets:
 
@@ -37,15 +37,15 @@ export const prerender = true;
 export const ssr = false;
 ```
 
-Every route gets a prerendered static HTML shell (so adapter-static has something to write to disk and serve as the SPA fallback), but `ssr = false` means none of that shell's _content_ is server-rendered — the actual UI only exists after Svelte hydrates in the browser and runs each route's own `fetch` calls. This decouples the build entirely from PokeAPI's availability/latency for every route except one (below), and matches "prerender static routes, dynamic detail routes client-side" from the project spec.
+Every route gets a prerendered static HTML shell (so adapter-static has something to write to disk and serve as the SPA fallback), but `ssr = false` means none of that shell's _content_ is server-rendered — the actual UI only exists after Svelte hydrates in the browser and runs each route's own `fetch` calls. This decouples the build entirely from PokeAPI's availability/latency for every route except two (below), and matches "prerender static routes, dynamic detail routes client-side" from the project spec.
 
-**The one exception is `/` itself.** `src/routes/+page.ts` overrides `ssr = true` for just this route, so its `load` function runs during the build's prerender step (against the _live_ PokeAPI) and the first page of Pokémon — including the image that becomes the page's Largest Contentful Paint element — is baked directly into the prerendered HTML. Every other route stays pure CSR. See [`DECISIONS.md`](DECISIONS.md) for why this one route needed the exception and what it cost.
+**`/` and `/berries` override `ssr = true`.** Both are routes with no dynamic param, so `load` can run once at build time against the _live_ PokeAPI and its result — the first page of Pokémon for `/`, the full berry list for `/berries` — gets baked directly into the prerendered HTML instead of waiting on a client fetch after hydration. `/pokemon/[name]` and `/berries/[name]` stay pure CSR: adapter-static can't SSR a dynamic route on GitHub Pages (there's no build-time name enumeration and no server at runtime to render one on demand), so this trick structurally doesn't apply to them. See [`DECISIONS.md`](DECISIONS.md) for why these two routes needed the exception, what it cost, and how the detail page's performance was verified instead (a client-side-navigation trace, since Lighthouse's navigation mode can't audit a dynamic route's hard-reload path — it returns a real 404 status by design, per the SPA-fallback mechanism above).
 
-The `+page.svelte` for `/` seeds its `$state` entries from that prerendered data on mount (skipping the first run of its own filter-effect so it doesn't immediately re-fetch and wipe what the server already rendered), then behaves exactly like a normal CSR page for every subsequent search, filter, sort, or infinite-scroll interaction.
+The `+page.svelte` for `/` seeds its `$state` entries from that prerendered data on mount (skipping the first run of its own filter-effect so it doesn't immediately re-fetch and wipe what the server already rendered), then behaves exactly like a normal CSR page for every subsequent search, filter, sort, or infinite-scroll interaction. `/berries` has no client-side re-fetch at all — the prerendered data is the only data it ever needs — so it needed no such guard.
 
 ## State & persistence
 
-- **Favorites** (`src/lib/stores/favorites.svelte.ts`) and **theme** (`src/lib/stores/theme.svelte.ts`) are singleton classes using Svelte 5 runes (`$state`), instantiated once at module scope and imported wherever needed. Both guard every `localStorage`/`document` access behind `$app/environment`'s `browser` check, since the module is also evaluated (harmlessly) during the one SSR'd `/` build.
+- **Favorites** (`src/lib/stores/favorites.svelte.ts`) and **theme** (`src/lib/stores/theme.svelte.ts`) are singleton classes using Svelte 5 runes (`$state`), instantiated once at module scope and imported wherever needed. Both guard every `localStorage`/`document` access behind `$app/environment`'s `browser` check, since the module is also evaluated (harmlessly) during the SSR'd `/` and `/berries` builds.
 - Theme has a second guard against flash-of-wrong-theme: a blocking inline `<script>` in `src/app.html` reads `localStorage`/`prefers-color-scheme` and sets `documentElement.dataset.theme` before any Svelte code runs, so the store's own initial read (during hydration) just picks up what's already there.
 - List-page filter/sort/search state and infinite-scroll state are local component `$state`, not global stores — there's no requirement to share or persist it across navigations.
 

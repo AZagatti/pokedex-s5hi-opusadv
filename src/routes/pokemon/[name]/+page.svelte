@@ -273,7 +273,7 @@
   .detail__hidden-tag {
     padding: 0.1rem 0.4rem;
     border-radius: 999px;
-    background: var(--accent);
+    background: var(--accent-text-bg);
     color: var(--accent-contrast);
     font-size: 0.65rem;
     text-transform: uppercase;

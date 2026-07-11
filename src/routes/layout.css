@@ -25,6 +25,11 @@
   --border: rgb(22 22 29 / 8%);
   --accent: #e63946;
   --accent-contrast: #ffffff;
+  /* Small text (badges, active tabs) on --accent needs slightly more contrast
+     than --accent-contrast alone provides against the light theme's red
+     (4.24:1, just under WCAG AA's 4.5:1 for small text); darkening the
+     background a touch clears it without changing --accent everywhere else. */
+  --accent-text-bg: color-mix(in srgb, var(--accent), black 10%);
   --danger: #dc2626;
 
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);

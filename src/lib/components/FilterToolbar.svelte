@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Search, X } from "lucide-svelte";
   import { GENERATIONS, POKEMON_TYPES } from "$lib/api/client";
-  import { getTypeColor } from "$lib/constants/type-colors";
+  import { getReadableTextColor, getTypeColor } from "$lib/constants/type-colors";
 
   interface Props {
     search: string;
@@ -86,11 +86,13 @@
     <div class="toolbar__type-chips">
       {#each POKEMON_TYPES as type (type)}
         {@const active = types.has(type)}
+        {@const chipColor = getTypeColor(type)}
         <button
           type="button"
           class="type-chip"
           class:type-chip--active={active}
-          style:--chip-color={getTypeColor(type)}
+          style:--chip-color={chipColor}
+          style:--chip-text-color={getReadableTextColor(chipColor)}
           aria-pressed={active}
           onclick={() => toggleType(type)}
         >
@@ -235,7 +237,7 @@
   }
 
   .type-chip--active {
-    color: #fff;
+    color: var(--chip-text-color);
     background: var(--chip-color);
     box-shadow: none;
   }

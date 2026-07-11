@@ -110,7 +110,7 @@
 
   .sprite-switcher__tab--active {
     color: var(--accent-contrast);
-    background: var(--accent);
+    background: var(--accent-text-bg);
   }
 
   @media (prefers-reduced-motion: reduce) {
