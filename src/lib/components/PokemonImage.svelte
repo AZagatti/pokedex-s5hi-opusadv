@@ -16,6 +16,7 @@
     width={size}
     height={size}
     loading={eager ? "eager" : "lazy"}
+    fetchpriority={eager ? "high" : "auto"}
     decoding="async"
     class="pokemon-image"
     style:width={`${size}px`}

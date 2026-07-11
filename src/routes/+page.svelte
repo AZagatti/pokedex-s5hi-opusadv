@@ -1,12 +1,15 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { getPokemon, getPokemonList } from "$lib/api/client";
   import { inViewport } from "$lib/actions/in-viewport";
   import type { Pokemon } from "$lib/api/schemas";
   import FilterToolbar from "$lib/components/FilterToolbar.svelte";
   import PokemonCard from "$lib/components/PokemonCard.svelte";
   import PokemonCardSkeleton from "$lib/components/PokemonCardSkeleton.svelte";
+  import type { CardDetail } from "$lib/pokemon/card-detail";
   import { getCandidates, sortByDex } from "$lib/pokemon/candidates";
   import { mapWithConcurrency } from "$lib/utils/concurrency";
+  import type { PageProps } from "./$types";
 
   const PAGE_SIZE = 30;
   const DEBOUNCE_MS = 250;
@@ -14,8 +17,16 @@
   interface Entry {
     name: string;
     url: string;
-    detail: Pokemon | null;
+    detail: CardDetail | null;
   }
+
+  const { data }: PageProps = $props();
+  // `data` never changes after mount (this route has no params and never
+  // calls goto()/invalidate()), so these are deliberately one-time reads to
+  // seed initial state, not a value we want tracked reactively.
+  const initialEntries = untrack(() => data.initialEntries);
+  const initialHasMore = untrack(() => data.initialHasMore);
+  const hasSeedData = initialEntries.length > 0;
 
   // Reassigned via `bind:` in the markup below, invisible to static analysis.
   // oxlint-disable-next-line prefer-const
@@ -28,20 +39,25 @@
   // oxlint-disable-next-line prefer-const
   let sortBy = $state<"dex" | "stats">("dex");
 
-  let entries = $state<Entry[]>([]);
-  let hasMore = $state(true);
-  let isInitialLoading = $state(true);
+  let entries = $state<Entry[]>(hasSeedData ? initialEntries : []);
+  let hasMore = $state(hasSeedData ? initialHasMore : true);
+  let isInitialLoading = $state(!hasSeedData);
   let isLoadingMore = $state(false);
   let isComputingStats = $state(false);
   let statsProgress = $state({ done: 0, total: 0 });
   let loadError = $state(false);
 
   // Unfiltered "browse" mode state (server-paginated).
-  let browseOffset = 0;
+  let browseOffset = hasSeedData ? PAGE_SIZE : 0;
   // Filtered/sorted candidate pool, sliced client-side.
-  let candidatePool = $state<{ name: string; url: string; detail: Pokemon | null }[] | null>(null);
+  let candidatePool = $state<{ name: string; url: string; detail: CardDetail | null }[] | null>(null);
 
   let requestSeq = 0;
+  // The mount effect below would otherwise immediately re-fetch page one and
+  // wipe the SSR-seeded grid (flash-to-skeleton + wasted requests). Skip its
+  // very first run when data was already seeded; every subsequent run is a
+  // genuine filter change and should run applyFilters() as normal.
+  let skipInitialApplyFilters = hasSeedData;
 
   $effect(() => {
     const value = searchInput;
@@ -198,6 +214,10 @@
     void generationId;
     void types;
     void sortBy;
+    if (skipInitialApplyFilters) {
+      skipInitialApplyFilters = false;
+      return;
+    }
     void applyFilters();
   });
 </script>
@@ -208,6 +228,9 @@
     name="description"
     content="Browse, search, and filter every Pokémon with animated detail pages, evolution chains, and favorites."
   />
+  <!-- Kicks off the very first (default, unfiltered) list fetch as soon as the
+       HTML is parsed, instead of waiting for JS to boot and hydrate. -->
+  <link rel="preload" as="fetch" crossorigin="anonymous" href="https://pokeapi.co/api/v2/pokemon?limit=30&offset=0" />
 </svelte:head>
 
 <h1 class="visually-hidden">Pokédex</h1>
@@ -244,8 +267,8 @@
   </div>
 {:else}
   <div class="pokemon-grid">
-    {#each entries as entry (entry.name)}
-      <PokemonCard name={entry.name} url={entry.url} detail={entry.detail} />
+    {#each entries as entry, i (entry.name)}
+      <PokemonCard name={entry.name} url={entry.url} detail={entry.detail} eager={i < 12} />
     {/each}
   </div>
 

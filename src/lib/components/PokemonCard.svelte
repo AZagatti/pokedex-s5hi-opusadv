@@ -1,7 +1,7 @@
 <script lang="ts">
   import { resolve } from "$app/paths";
   import { idFromUrl } from "$lib/api/client";
-  import type { Pokemon } from "$lib/api/schemas";
+  import type { CardDetail } from "$lib/pokemon/card-detail";
   import { formatName } from "$lib/utils/format";
   import FavoriteButton from "./FavoriteButton.svelte";
   import PokemonImage from "./PokemonImage.svelte";
@@ -10,14 +10,17 @@
   interface Props {
     name: string;
     url?: string;
-    detail: Pokemon | null;
+    detail: CardDetail | null;
+    eager?: boolean;
   }
 
-  const { name, url = "", detail }: Props = $props();
+  const { name, url = "", detail, eager = false }: Props = $props();
   const dexNumber = $derived(detail?.id ?? idFromUrl(url));
-  const sprite = $derived(
-    detail?.sprites.other?.["official-artwork"]?.front_default ?? detail?.sprites.front_default
-  );
+  // The grid favors the small default sprite (a few KB) over the official
+  // artwork (100-200KB): with ~30+ cards on screen this is the difference
+  // between a fast LCP and a multi-second one. Official artwork is reserved
+  // for the detail page, where there's only one image to load.
+  const sprite = $derived(detail?.sprites.front_default);
 </script>
 
 <div class="pokemon-card">
@@ -32,7 +35,7 @@
   <span class="pokemon-card__dex">#{String(dexNumber).padStart(3, "0")}</span>
   <div class="pokemon-card__image">
     {#if detail}
-      <PokemonImage src={sprite} alt={name} size={112} />
+      <PokemonImage src={sprite} alt={name} size={112} {eager} />
     {:else}
       <div class="pokemon-card__skeleton-image" aria-hidden="true"></div>
     {/if}

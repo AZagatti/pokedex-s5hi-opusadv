@@ -27,6 +27,10 @@ export default defineConfig(() => {
               ? undefined
               : true,
         },
+        // Per-route CSS here is well under this (largest route ~20KB); inlining
+        // it removes the render-blocking stylesheet request(s) from the
+        // critical path entirely, which meaningfully improves first paint.
+        inlineStyleThreshold: 40_000,
         paths: {
           base,
         },
