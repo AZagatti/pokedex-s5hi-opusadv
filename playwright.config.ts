@@ -13,8 +13,12 @@ export default defineConfig({
     baseURL: `http://127.0.0.1:${PORT}`,
   },
   webServer: {
-    command: `npm run build && npm run preview -- --port ${PORT} --strictPort`,
-    port: PORT,
+    // Explicit --host 127.0.0.1 and polling the same literal address (rather
+    // than Playwright's default "localhost", whose DNS resolution can pick a
+    // different loopback interface than the one below on some CI runners)
+    // keeps the readiness check and baseURL pointed at the exact same socket.
+    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${PORT} --strictPort`,
     reuseExistingServer: false,
+    url: `http://127.0.0.1:${PORT}`,
   },
 });
