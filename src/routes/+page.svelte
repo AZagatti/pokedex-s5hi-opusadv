@@ -198,7 +198,12 @@
       }
       candidatePool = filtered ? sortByDex(filtered).map((f) => ({ ...f, detail: null })) : null;
       isInitialLoading = false;
-      await loadMore();
+      // Load the first page directly rather than through loadMore(): that
+      // helper's isLoadingMore guard exists to stop the scroll sentinel from
+      // double-firing, but a fresh filter change must never be silently
+      // dropped just because the previous filter's page load hadn't
+      // finished yet (requestSeq above already supersedes it correctly).
+      await (candidatePool ? loadCandidatePage(seq) : loadBrowsePage(seq));
     } catch {
       if (seq === requestSeq) {
         loadError = true;
