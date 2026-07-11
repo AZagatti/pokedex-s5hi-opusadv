@@ -1,0 +1,80 @@
+name: CI / Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. a second push before the first
+# run finishes), but never cancel a deploy that's already live-in-progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Lint, typecheck, test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npm run check
+
+      - run: npx playwright install --with-deps chromium
+
+      # Runs vitest, then builds + previews the app for Playwright's own
+      # webServer, then runs the e2e suite against that preview build.
+      - run: npm run test
+
+  deploy:
+    name: Build and deploy to GitHub Pages
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      # BASE_PATH is set only here: this is the one build whose output is
+      # actually served under /pokedex-s5hi-opusadv/ (GitHub Pages project
+      # site). The build's "/" route is server-rendered against the live
+      # PokeAPI at this step (see src/routes/+page.ts) — a transient PokeAPI
+      # failure degrades to an empty seed rather than failing the build.
+      - run: npm run build
+        env:
+          BASE_PATH: /pokedex-s5hi-opusadv
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
