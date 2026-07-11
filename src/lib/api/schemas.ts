@@ -140,6 +140,7 @@ export const berrySchema = z.object({
   ),
   growth_time: z.number(),
   id: z.number(),
+  item: namedResourceSchema,
   max_harvest: z.number(),
   name: z.string(),
   natural_gift_power: z.number(),

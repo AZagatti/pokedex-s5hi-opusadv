@@ -81,3 +81,6 @@ export const getBerryList = (limit: number, offset: number) =>
 
 export const getBerry = (name: string) =>
   cachedFetch(`${API_BASE}/berry/${name}`, berrySchema);
+
+export const berrySpriteUrl = (itemName: string): string =>
+  `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${itemName}.png`;
