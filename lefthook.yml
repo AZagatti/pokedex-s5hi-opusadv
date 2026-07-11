@@ -1,0 +1,13 @@
+pre-commit:
+  parallel: true
+  jobs:
+    - name: lint
+      glob: "*.{js,ts,svelte}"
+      run: npx ultracite check {staged_files}
+    - name: typecheck
+      run: npm run check
+
+pre-push:
+  jobs:
+    - name: test
+      run: npm run test
